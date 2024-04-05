@@ -1,5 +1,7 @@
 package db
 
+import "github.com/cockroachdb/errors"
+
 type NetworkType uint32
 
 const (
@@ -7,13 +9,23 @@ const (
 	AVAIL_GOLDBERG_TESTNET
 )
 
-func (n *NetworkType) FromString(s string) {
+func (n *NetworkType) MustParse(s string) {
 	switch s {
 	case "avail-goldberg-testnet":
 		*n = AVAIL_GOLDBERG_TESTNET
 	default:
 		panic("unknown network type")
 	}
+}
+
+func (n *NetworkType) Parse(s string) error {
+	switch s {
+	case "avail-goldberg-testnet":
+		*n = AVAIL_GOLDBERG_TESTNET
+	default:
+		return errors.New("unknown network type")
+	}
+	return nil
 }
 
 type Block struct {

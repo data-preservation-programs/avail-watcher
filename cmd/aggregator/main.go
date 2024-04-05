@@ -21,6 +21,7 @@ import (
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/ipld/go-car"
+	_ "github.com/joho/godotenv/autoload"
 	"github.com/rjNemo/underscore"
 	"gorm.io/gorm"
 )
@@ -58,7 +59,7 @@ func newRunner() (*runner, error) {
 		return nil, errors.WithStack(err)
 	}
 	var networkType db.NetworkType
-	networkType.FromString(os.Getenv("NETWORK_TYPE"))
+	networkType.MustParse(os.Getenv("NETWORK_TYPE"))
 
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
@@ -194,12 +195,14 @@ func (r runner) createFile(ctx context.Context, files []types.Object) error {
 			carReader, err := car.NewCarReader(output.Body)
 			if err != nil {
 				writer.CloseWithError(err)
+				output.Body.Close()
 				return
 			}
 			if i == 0 {
 				n, err := util.WriteCarHeader(writer, *carReader.Header)
 				if err != nil {
 					writer.CloseWithError(err)
+					output.Body.Close()
 					return
 				}
 				offset += uint64(n)
@@ -212,11 +215,13 @@ func (r runner) createFile(ctx context.Context, files []types.Object) error {
 				}
 				if err != nil {
 					writer.CloseWithError(err)
+					output.Body.Close()
 					return
 				}
 				n, dataOffset, err := util.WriteBlock(writer, blk.Cid(), blk.RawData())
 				if err != nil {
 					writer.CloseWithError(err)
+					output.Body.Close()
 					return
 				}
 				manifests = append(manifests, db.Manifest{
@@ -227,6 +232,7 @@ func (r runner) createFile(ctx context.Context, files []types.Object) error {
 				})
 				offset += uint64(n)
 			}
+			output.Body.Close()
 		}
 		writer.Close()
 	}()

@@ -19,9 +19,9 @@ import (
 	"github.com/ipld/go-car"
 	"github.com/ipld/go-ipld-prime/codec/dagjson"
 	"github.com/ipld/go-ipld-prime/node/bindnode"
+	_ "github.com/joho/godotenv/autoload"
 	"gorm.io/gorm"
 )
-import _ "github.com/joho/godotenv/autoload"
 
 var log = logging.Logger("main")
 
@@ -56,7 +56,7 @@ func newRunner() (*runner, error) {
 		return nil, errors.WithStack(err)
 	}
 	var networkType db.NetworkType
-	networkType.FromString(os.Getenv("NETWORK_TYPE"))
+	networkType.MustParse(os.Getenv("NETWORK_TYPE"))
 
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {

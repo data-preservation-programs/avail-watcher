@@ -1,5 +1,10 @@
 package util
 
+import (
+	"net/url"
+	"strings"
+)
+
 // ChunkSlice is a generic function that takes a slice of any type and an integer as input.
 // It divides the input slice into packJobs of size 'chunkSize' and returns a 2D slice.
 // If 'chunkSize' is less than or equal to zero, it returns an empty 2D slice.
@@ -56,4 +61,16 @@ func NextPowerOfTwo(x uint64) uint64 {
 
 	// Otherwise, return the next power of two
 	return 1 << pos
+}
+
+// ParseS3URL takes an S3 URL string and returns the bucket name and key.
+func ParseS3URL(s3URL string) (bucket, key string, err error) {
+	parsedURL, err := url.Parse(s3URL)
+	if err != nil {
+		return "", "", err
+	}
+
+	bucket = parsedURL.Host
+	key = strings.TrimPrefix(parsedURL.Path, "/") // Remove the leading "/" from the path
+	return bucket, key, nil
 }
