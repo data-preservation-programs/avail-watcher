@@ -109,15 +109,14 @@ func (r runner) run(ctx context.Context) error {
 			return errors.WithStack(err)
 		}
 		if len(files) > 0 {
-			r.createFile(ctx, files)
+			err = r.createFile(ctx, files)
 			if err != nil {
 				return errors.WithStack(err)
 			}
 		} else {
-			log.Info("Files not large enough to fill up a sector")
+			log.Infof("Files not large enough to fill up a sector. Going to sleep at %s, will try again in %s", r.interval.String())
+			time.Sleep(r.interval)
 		}
-		log.Infof("Going to sleep at %s, will try again in %s", r.interval.String())
-		time.Sleep(r.interval)
 	}
 
 	return nil
