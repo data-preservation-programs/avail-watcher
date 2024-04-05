@@ -2,9 +2,9 @@ package main
 
 import (
 	"avail-watcher/db"
+	"avail-watcher/util"
 	"bytes"
 	"context"
-	"encoding/binary"
 	"fmt"
 	"io"
 	"os"
@@ -23,7 +23,7 @@ import (
 )
 import _ "github.com/joho/godotenv/autoload"
 
-var log = logging.Logger("mai")
+var log = logging.Logger("main")
 
 func main() {
 	r, err := newRunner()
@@ -138,37 +138,20 @@ func (r runner) processBlock(ctx context.Context, blockNumber uint64) error {
 			Version: 1,
 		}
 
-		headerBuf := new(bytes.Buffer)
-		err := car.WriteHeader(&carHeader, headerBuf)
-		if err != nil {
-			writer.CloseWithError(err)
-			return
-		}
-		dataOffset += uint64(headerBuf.Len())
-
-		sum := uint64(dataBuf.Len() + nodeCid.ByteLen())
-		buf := make([]byte, 8)
-		n := binary.PutUvarint(buf, sum)
-		_, err = writer.Write(buf[:n])
+		n, err := util.WriteCarHeader(writer, carHeader)
 		if err != nil {
 			writer.CloseWithError(err)
 			return
 		}
 		dataOffset += uint64(n)
 
-		_, err = writer.Write(nodeCid.Bytes())
-		if err != nil {
-			writer.CloseWithError(err)
-			return
-		}
-		dataOffset += uint64(nodeCid.ByteLen())
-
-		_, err = writer.Write(dataBuf.Bytes())
+		_, n, err = util.WriteBlock(writer, nodeCid, dataBuf.Bytes())
 		if err != nil {
 			writer.CloseWithError(err)
 			return
 		}
 
+		dataOffset += uint64(n)
 		writer.Close()
 	}()
 

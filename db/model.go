@@ -29,3 +29,12 @@ type Manifest struct {
 	Offset uint64
 	Length uint64
 }
+
+type Piece struct {
+	Network   NetworkType
+	PieceCid  string
+	PieceSize uint64
+	Url       string
+	Size      uint64
+	RootCid   string
+}

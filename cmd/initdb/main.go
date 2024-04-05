@@ -22,7 +22,7 @@ func run() error {
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	err = database.AutoMigrate(&db.Block{}, &db.Manifest{})
+	err = database.AutoMigrate(&db.Block{}, &db.Manifest{}, &db.Piece{})
 	if err != nil {
 		return errors.WithStack(err)
 	}
