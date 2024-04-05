@@ -118,8 +118,6 @@ func (r runner) run(ctx context.Context) error {
 			time.Sleep(r.interval)
 		}
 	}
-
-	return nil
 }
 
 func (r runner) fetchFiles(ctx context.Context) ([]types.Object, error) {
@@ -173,8 +171,8 @@ func (r runner) createFile(ctx context.Context, files []types.Object) error {
 	var offset uint64
 	id := uuid.NewString()
 	path := fmt.Sprintf("%s/%s.car", r.manifestFolder, id)
-	s3Url := fmt.Sprintf("s3://%s/%s", r.manifestBucket, path)
-	httpsUrl := fmt.Sprintf("https://%s.s3.amazonaws.com/%s", r.manifestBucket, path)
+	s3URL := fmt.Sprintf("s3://%s/%s", r.manifestBucket, path)
+	httpsURL := fmt.Sprintf("https://%s.s3.amazonaws.com/%s", r.manifestBucket, path)
 	reader, writer := io.Pipe()
 	defer reader.Close()
 	calc := &commp.Calc{}
@@ -209,7 +207,7 @@ func (r runner) createFile(ctx context.Context, files []types.Object) error {
 			}
 			for {
 				blk, err := carReader.Next()
-				if err == io.EOF {
+				if errors.Is(err, io.EOF) {
 					break
 				}
 				if err != nil {
@@ -225,7 +223,7 @@ func (r runner) createFile(ctx context.Context, files []types.Object) error {
 				}
 				manifests = append(manifests, db.Manifest{
 					Cid:    blk.Cid().String(),
-					S3Url:  s3Url,
+					S3Url:  s3URL,
 					Offset: offset + uint64(dataOffset),
 					Length: uint64(len(blk.RawData())),
 				})
@@ -258,7 +256,7 @@ func (r runner) createFile(ctx context.Context, files []types.Object) error {
 	err = r.database.Create(&db.Piece{
 		PieceCid:  pieceCid.String(),
 		PieceSize: pieceSize,
-		Url:       httpsUrl,
+		URL:       httpsURL,
 		Size:      offset,
 		RootCid:   rootCID.String(),
 		Network:   r.networkType,

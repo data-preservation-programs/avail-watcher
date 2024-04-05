@@ -18,7 +18,7 @@ var logger = log.Logger("api")
 
 func main() {
 	if err := start(); err != nil {
-		logger.Fatalw("failed to start: %+v", err)
+		logger.Panicln(err)
 	}
 }
 
@@ -66,13 +66,13 @@ func start() error {
 		var manifest db.Manifest
 		if err := database.WithContext(ctx).
 			First(&manifest, "cid = ?", block.Cid).Error; err != nil {
-			logger.Errorw("err", err, "cid", block.Cid)
+			logger.Errorw("Database query error", "err", err, "cid", block.Cid)
 			c.JSON(500, "internal error")
 		}
 
 		bucket, key, err := util.ParseS3URL(manifest.S3Url)
 		if err != nil {
-			logger.Errorw("err", err, "s3URL", manifest.S3Url)
+			logger.Errorw("Cannot parse s3URL", "err", err, "s3URL", manifest.S3Url)
 			c.JSON(500, "internal error")
 			return
 		}
@@ -83,13 +83,12 @@ func start() error {
 			Range:  &rangeHeader,
 		})
 		if err != nil {
-			logger.Errorw("err", err, "bucket", bucket, "key", key)
+			logger.Errorw("Cannot get S3 object", "err", err, "bucket", bucket, "key", key)
 			c.JSON(500, "internal error")
 			return
 		}
 		defer response.Body.Close()
 		c.DataFromReader(200, int64(manifest.Length), "application/json", response.Body, nil)
-		return
 	})
 
 	return route.Run(":8080")

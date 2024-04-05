@@ -6,13 +6,13 @@ type NetworkType uint32
 
 const (
 	UNKNOWN NetworkType = iota
-	AVAIL_GOLDBERG_TESTNET
+	AvailGoldbergTestnet
 )
 
 func (n *NetworkType) MustParse(s string) {
 	switch s {
 	case "avail-goldberg-testnet":
-		*n = AVAIL_GOLDBERG_TESTNET
+		*n = AvailGoldbergTestnet
 	default:
 		panic("unknown network type")
 	}
@@ -21,7 +21,7 @@ func (n *NetworkType) MustParse(s string) {
 func (n *NetworkType) Parse(s string) error {
 	switch s {
 	case "avail-goldberg-testnet":
-		*n = AVAIL_GOLDBERG_TESTNET
+		*n = AvailGoldbergTestnet
 	default:
 		return errors.New("unknown network type")
 	}
@@ -46,7 +46,7 @@ type Piece struct {
 	Network   NetworkType
 	PieceCid  string
 	PieceSize uint64
-	Url       string
+	URL       string
 	Size      uint64
 	RootCid   string
 }

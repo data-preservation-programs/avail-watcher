@@ -1,0 +1,66 @@
+run:
+  tests: false
+
+linters:
+  enable-all: true
+  disable:
+    - typecheck
+    - interfacer
+    - structcheck
+    - golint
+    - ifshort
+    - scopelint
+    - varcheck
+    - varnamelen
+    - maligned
+    - deadcode
+    - structcheck
+    - gci
+    - goimports
+    - gofumpt
+    - nolintlint
+    - ireturn
+    - nosnakecase
+    - nlreturn
+    - godox
+    - gomoddirectives
+    - rowserrcheck
+    - sqlclosecheck
+    - wastedassign
+    - gocognit
+    - wsl
+    - musttag
+    - exhaustivestruct
+    - cyclop
+    - gomnd
+    - gochecknoglobals
+    - funlen
+    - gocyclo
+    - exhaustruct
+    - wrapcheck
+    - nestif
+    - containedctx
+    - maintidx
+    - nonamedreturns
+    - nilnil
+    - prealloc
+    - gochecknoinits
+    - dupl
+    - forbidigo
+    - godot
+    - depguard
+    - nakedret
+    - tagalign
+    - lll
+    - dupword
+    - interfacebloat
+    - goconst
+
+linters-settings:
+  errcheck:
+    exclude-functions:
+      - (github.com/libp2p/go-libp2p/network.MuxedStream).SetDeadline
+  revive:
+    rules:
+      - name: var-naming
+        disabled: true

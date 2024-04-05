@@ -2,6 +2,7 @@ package db
 
 import (
 	"fmt"
+	"net"
 	"net/url"
 	"os"
 
@@ -15,6 +16,9 @@ func GetDB() (*gorm.DB, error) {
 	pgUser := os.Getenv("PG_USER")
 	pgPassword := os.Getenv("PG_PASSWORD")
 	pgDatabase := os.Getenv("PG_DATABASE")
-	connStr := fmt.Sprintf("postgres://%s@%s:%s/%s", url.UserPassword(pgUser, pgPassword).String(), pgHost, pgPort, pgDatabase)
+	connStr := fmt.Sprintf("postgres://%s@%s/%s",
+		url.UserPassword(pgUser, pgPassword).String(),
+		net.JoinHostPort(pgHost, pgPort),
+		pgDatabase)
 	return gorm.Open(postgres.Open(connStr))
 }
