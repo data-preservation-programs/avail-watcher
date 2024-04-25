@@ -5,20 +5,19 @@ import (
 	"avail-watcher/util"
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	gsrpc "github.com/centrifuge/go-substrate-rpc-client/v4"
 	"github.com/cockroachdb/errors"
+	"github.com/gotidy/ptr"
 	"github.com/ipfs/go-cid"
 	u "github.com/ipfs/go-ipfs-util"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/ipld/go-car"
-	"github.com/ipld/go-ipld-prime/codec/dagjson"
-	"github.com/ipld/go-ipld-prime/node/bindnode"
 	_ "github.com/joho/godotenv/autoload"
 	"gorm.io/gorm"
 )
@@ -115,50 +114,43 @@ func (r runner) processBlock(ctx context.Context, blockNumber uint64) error {
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	var block interface{}
+	var block any
 	err = r.api.Client.Call(&block, "chain_getBlock", blockHash)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	node := bindnode.Wrap(block, nil)
-	dataBuf := bytes.NewBuffer(nil)
-	err = dagjson.Encode(node.Representation(), dataBuf)
+	buf := new(bytes.Buffer)
+	payload, err := json.Marshal(block)
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	nodeCid := cid.NewCidV1(cid.DagJSON, u.Hash(dataBuf.Bytes()))
+	nodeCid := cid.NewCidV1(cid.DagJSON, u.Hash(payload))
 	key := fmt.Sprintf("%s/%d.car", r.folder, blockNumber)
-	reader, writer := io.Pipe()
 	var dataOffset uint64
-	defer reader.Close()
-	go func() {
-		carHeader := car.CarHeader{
-			Roots:   []cid.Cid{nodeCid},
-			Version: 1,
-		}
+	carHeader := car.CarHeader{
+		Roots:   []cid.Cid{nodeCid},
+		Version: 1,
+	}
 
-		n, err := util.WriteCarHeader(writer, carHeader)
-		if err != nil {
-			writer.CloseWithError(err)
-			return
-		}
-		dataOffset += uint64(n)
+	n, err := util.WriteCarHeader(buf, carHeader)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	dataOffset += uint64(n)
 
-		_, n, err = util.WriteBlock(writer, nodeCid, dataBuf.Bytes())
-		if err != nil {
-			writer.CloseWithError(err)
-			return
-		}
+	_, n, err = util.WriteBlock(buf, nodeCid, payload)
+	if err != nil {
+		return errors.WithStack(err)
+	}
 
-		dataOffset += uint64(n)
-		writer.Close()
-	}()
+	dataOffset += uint64(n)
 
 	_, err = r.s3Client.PutObject(ctx, &s3.PutObjectInput{
-		Bucket: &r.bucket,
-		Key:    &key,
-		Body:   reader,
+		Bucket:        &r.bucket,
+		Key:           &key,
+		Body:          buf,
+		ContentLength: ptr.Of(int64(buf.Len())),
 	})
 	if err != nil {
 		return errors.WithStack(err)
@@ -179,7 +171,7 @@ func (r runner) processBlock(ctx context.Context, blockNumber uint64) error {
 			Cid:    nodeCid.String(),
 			S3Url:  fmt.Sprintf("s3://%s/%s", r.bucket, key),
 			Offset: dataOffset,
-			Length: uint64(dataBuf.Len()),
+			Length: uint64(len(payload)),
 		}).Error
 		if err != nil {
 			return errors.WithStack(err)
